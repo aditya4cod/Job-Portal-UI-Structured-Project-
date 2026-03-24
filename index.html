@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevPortal | Job Board</title>
+  <!-- 
+    CSS STYLES (Equates to style.css)
+  -->
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --radius: 12px;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      line-height: 1.5;
+    }
+
+    header {
+      background: var(--surface);
+      padding: 1rem 5%;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo { font-size: 1.5rem; font-weight: 800; color: var(--primary); text-decoration: none; }
+    
+    .saved-badge {
+      background: #eff6ff;
+      color: var(--primary);
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .main-container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      display: grid;
+      grid-template-columns: 1fr 1.5fr;
+      gap: 2rem;
+    }
+
+    /* Filters Section */
+    .filter-bar {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 1rem;
+      background: var(--surface);
+      padding: 1.5rem;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 1rem;
+    }
+
+    .filter-bar input, .filter-bar select {
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      flex: 1;
+      outline: none;
+    }
+
+    .filter-bar input:focus { border-color: var(--primary); }
+
+    /* Job List */
+    .job-list { display: flex; flex-direction: column; gap: 1rem; }
+
+    .job-card {
+      background: var(--surface);
+      padding: 1.5rem;
+      border-radius: var(--radius);
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .job-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+    .job-card.active { border-color: var(--primary); background: #f0f7ff; }
+
+    .job-card h3 { margin-bottom: 0.25rem; font-size: 1.1rem; }
+    .job-card .company { color: var(--primary); font-weight: 600; font-size: 0.9rem; }
+    .job-card .meta { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem; }
+
+    .btn-save {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      font-size: 1.25rem;
+      cursor: pointer;
+      padding: 5px;
+    }
+
+    /* Job Details Section */
+    .details-panel {
+      background: var(--surface);
+      padding: 2.5rem;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 100px;
+      height: fit-content;
+      min-height: 400px;
+    }
+
+    .details-header { border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
+    .details-header h2 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+    
+    .apply-btn {
+      display: inline-block;
+      background: var(--primary);
+      color: white;
+      padding: 0.8rem 2rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 700;
+      margin-top: 1.5rem;
+      transition: background 0.2s;
+    }
+
+    .apply-btn:hover { background: var(--primary-hover); }
+
+    .empty-state {
+      text-align: center;
+      padding: 4rem 1rem;
+      color: var(--text-muted);
+    }
+
+    /* Tags */
+    .tag {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      background: #f1f5f9;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      margin-right: 0.5rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 850px) {
+      .main-container { grid-template-columns: 1fr; }
+      .details-panel { display: none; }
+      .details-panel.mobile-visible {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 200;
+        border-radius: 0;
+      }
+      .filter-bar { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="#" class="logo">🚀 DevPortal</a>
+    <div class="saved-badge">Saved: <span id="saveCount">0</span></div>
+  </header>
+
+  <div class="main-container">
+    <!-- Filters Section -->
+    <section class="filter-bar">
+      <input type="text" id="search" placeholder="Search titles or companies...">
+      <select id="location">
+        <option value="all">All Locations</option>
+        <option value="Remote">Remote</option>
+        <option value="Bangalore">Bangalore</option>
+        <option value="Hyderabad">Hyderabad</option>
+        <option value="New Delhi">New Delhi</option>
+      </select>
+    </section>
+
+    <!-- Sidebar: Job List -->
+    <aside class="job-list" id="jobList">
+      <!-- Injected by JavaScript -->
+    </aside>
+
+    <!-- Main: Job Details -->
+    <main class="details-panel" id="detailsPanel">
+      <div id="detailsPlaceholder" class="empty-state">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
+        <h3>Select a position to see full details</h3>
+        <p>Browse the list on the left to start your application.</p>
+      </div>
+      <div id="detailsContent" style="display: none;">
+        <div class="details-header">
+          <h2 id="viewTitle">Role Title</h2>
+          <p class="company" id="viewCompany">Company Name</p>
+          <div id="viewMeta" class="meta" style="margin-top: 1rem;">Location • Type</div>
+          <a href="#" class="apply-btn">Quick Apply</a>
+        </div>
+        <div>
+          <h4>Description</h4>
+          <p id="viewDesc" style="margin: 1rem 0; color: #475569;"></p>
+          <h4>Requirements</h4>
+          <ul id="viewReq" style="margin: 1rem 0 1.5rem 1.5rem; color: #475569;"></ul>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- 
+    JAVASCRIPT (Equates to script.js)
+  -->
+  <script>
+    // 1. Mock Data
+    const jobs = [
+      {
+        id: 1,
+        title: "Frontend Engineer (React)",
+        company: "PixelPerfect UI",
+        location: "Remote",
+        type: "Full-Time",
+        salary: "₹18L - ₹24L",
+        desc: "We are seeking a Frontend Engineer with a passion for building beautiful, accessible, and performant user interfaces. You will work directly with our design team to implement new features.",
+        req: ["3+ years of React experience", "Strong CSS/HTML5 knowledge", "Experience with TypeScript"]
+      },
+      {
+        id: 2,
+        title: "Backend Developer (Node.js)",
+        company: "DataStream Systems",
+        location: "Bangalore",
+        type: "Full-Time",
+        salary: "₹20L - ₹30L",
+        desc: "Help us build the next generation of real-time data processing engines. You will be responsible for scaling our APIs and optimizing database queries.",
+        req: ["Expertise in Node.js and Express", "PostgreSQL experience", "Understanding of Microservices"]
+      },
+      {
+        id: 3,
+        title: "Product Designer",
+        company: "InnovateX",
+        location: "Hyderabad",
+        type: "Contract",
+        salary: "₹10L - ₹15L",
+        desc: "Join our creative team to craft intuitive user experiences for our fintech platform. You will handle everything from wireframes to high-fidelity prototypes.",
+        req: ["Proficient in Figma", "Experience with user testing", "Strong portfolio of web products"]
+      },
+      {
+        id: 4,
+        title: "Full Stack Developer",
+        company: "GrowthLabs",
+        location: "New Delhi",
+        type: "Full-Time",
+        salary: "₹15L - ₹22L",
+        desc: "A generalist role for someone who loves to touch every part of the stack. From AWS infrastructure to UI components.",
+        req: ["MERN Stack proficiency", "AWS Fundamentals", "Agile experience"]
+      },
+      {
+        id: 5,
+        title: "Senior QA Automation",
+        company: "SecureNet",
+        location: "Remote",
+        type: "Full-Time",
+        salary: "₹12L - ₹18L",
+        desc: "Ensure our platform remains bulletproof. You will lead the automation strategy and build robust test suites.",
+        req: ["Experience with Selenium or Cypress", "Knowledge of CI/CD pipelines", "Python or JS scripting"]
+      }
+    ];
+
+    // 2. Global State
+    let savedJobs = JSON.parse(localStorage.getItem('savedJobs')) || [];
+    let activeJobId = null;
+
+    // 3. Selectors
+    const jobListContainer = document.getElementById('jobList');
+    const searchInput = document.getElementById('search');
+    const locationFilter = document.getElementById('location');
+    const saveCountDisplay = document.getElementById('saveCount');
+
+    // 4. Core Functions
+    function renderJobs() {
+      const searchTerm = searchInput.value.toLowerCase();
+      const locationTerm = locationFilter.value;
+
+      const filteredJobs = jobs.filter(job => {
+        const matchesSearch = job.title.toLowerCase().includes(searchTerm) || 
+                              job.company.toLowerCase().includes(searchTerm);
+        const matchesLocation = locationTerm === 'all' || job.location === locationTerm;
+        return matchesSearch && matchesLocation;
+      });
+
+      jobListContainer.innerHTML = '';
+
+      if (filteredJobs.length === 0) {
+        jobListContainer.innerHTML = '<p class="empty-state">No jobs found.</p>';
+        return;
+      }
+
+      filteredJobs.forEach(job => {
+        const isSaved = savedJobs.includes(job.id);
+        const card = document.createElement('div');
+        card.className = `job-card ${activeJobId === job.id ? 'active' : ''}`;
+        card.setAttribute('data-id', job.id);
+        
+        card.innerHTML = `
+          <button class="btn-save" onclick="event.stopPropagation(); toggleSave(${job.id})">
+            ${isSaved ? '❤️' : '🤍'}
+          </button>
+          <div onclick="selectJob(${job.id})">
+            <p class="company">${job.company}</p>
+            <h3>${job.title}</h3>
+            <div class="tag">${job.type}</div>
+            <div class="meta">${job.location} • ${job.salary}</div>
+          </div>
+        `;
+        
+        jobListContainer.appendChild(card);
+      });
+
+      updateSaveUI();
+    }
+
+    function selectJob(id) {
+      activeJobId = id;
+      const job = jobs.find(j => j.id === id);
+      
+      // Update UI Classes
+      renderJobs();
+
+      // Show Content
+      document.getElementById('detailsPlaceholder').style.display = 'none';
+      document.getElementById('detailsContent').style.display = 'block';
+
+      // Map Data
+      document.getElementById('viewTitle').textContent = job.title;
+      document.getElementById('viewCompany').textContent = job.company;
+      document.getElementById('viewMeta').textContent = `${job.location} • ${job.type} • ${job.salary}`;
+      document.getElementById('viewDesc').textContent = job.desc;
+      
+      const reqUl = document.getElementById('viewReq');
+      reqUl.innerHTML = '';
+      job.req.forEach(r => {
+        const li = document.createElement('li');
+        li.textContent = r;
+        reqUl.appendChild(li);
+      });
+    }
+
+    function toggleSave(id) {
+      if (savedJobs.includes(id)) {
+        savedJobs = savedJobs.filter(savedId => savedId !== id);
+      } else {
+        savedJobs.push(id);
+      }
+      localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
+      renderJobs();
+    }
+
+    function updateSaveUI() {
+      saveCountDisplay.textContent = savedJobs.length;
+    }
+
+    // 5. Event Listeners
+    searchInput.addEventListener('input', renderJobs);
+    locationFilter.addEventListener('change', renderJobs);
+
+    // Initial Render
+    renderJobs();
+  </script>
+</body>
+</html>
